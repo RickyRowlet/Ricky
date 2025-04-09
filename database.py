@@ -181,10 +181,36 @@ def search_transactions(trans_type="", keyword="", start_date="", end_date=""):
     return results
 
 def init_user_file():
+    """Khởi tạo file users.xlsx với tài khoản mặc định"""
     file = "users.xlsx"
     if not os.path.exists(file):
         wb = openpyxl.Workbook()
         ws = wb.active
-        ws.append(["Username", "Password"])
-        ws.append(["admin", "admin"])
+        ws.append(["Username", "Password", "Role"])  # Thêm cột Role
+        ws.append(["admin", "admin", "admin"])  # Tài khoản admin mặc định
         wb.save(file)
+
+def add_user(username, password, role):
+    """Thêm tài khoản mới với quyền"""
+    wb = openpyxl.load_workbook("users.xlsx")
+    ws = wb.active
+    for row in ws.iter_rows(min_row=2, values_only=True):
+        if row[0] == username:
+            raise ValueError("Tên đăng nhập đã tồn tại!")
+    ws.append([username, password, role])
+    wb.save("users.xlsx")
+
+def get_users():
+    """Lấy danh sách tất cả tài khoản"""
+    wb = openpyxl.load_workbook("users.xlsx")
+    ws = wb.active
+    return [row for row in ws.iter_rows(min_row=2, values_only=True)]
+
+def check_user_role(username):
+    """Kiểm tra quyền của tài khoản"""
+    wb = openpyxl.load_workbook("users.xlsx")
+    ws = wb.active
+    for row in ws.iter_rows(min_row=2, values_only=True):
+        if row[0] == username:
+            return row[2]  # Trả về quyền (role)
+    return None
