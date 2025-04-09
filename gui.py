@@ -5,8 +5,9 @@ import database
 from datetime import datetime
 
 class MisaApp:
-    def __init__(self, root):
+    def __init__(self, root, role):
         self.root = root
+        self.role = role  # Lưu quyền của tài khoản
         self.root.title("Phần mềm quản lý bán hàng Misa")
         self.root.geometry("1000x700")
 
@@ -19,6 +20,9 @@ class MisaApp:
         self.build_sales_tab()
         self.build_accounting_tab()
         self.build_statistics_tab()
+
+        if self.role == "admin":
+            self.build_user_management_tab()  # Chỉ admin mới có tab quản lý tài khoản
 
     def configure_styles(self):
         style = ttk.Style()
@@ -289,7 +293,61 @@ class MisaApp:
         self.stats_text.insert(tk.END, f" • Tổng chi phí hôm nay:   {expense:,.0f} VND\n")
         self.stats_text.insert(tk.END, f" • Lợi nhuận hôm nay:      {income - expense:,.0f} VND\n")
 
+    def build_user_management_tab(self):
+        self.user_tab = ttk.Frame(self.tabs)
+        self.tabs.add(self.user_tab, text="Quản lý tài khoản")
+
+        self.user_tree = ttk.Treeview(self.user_tab, columns=("Username", "Role"), show="headings")
+        self.user_tree.heading("Username", text="Tên đăng nhập")
+        self.user_tree.heading("Role", text="Quyền")
+        self.user_tree.pack(fill="both", expand=True, padx=10, pady=10)
+
+        btn_frame = ttk.Frame(self.user_tab)
+        btn_frame.pack(fill="x", pady=5)
+
+        ttk.Button(btn_frame, text="Thêm tài khoản", command=self.add_user_window).pack(side="left", padx=5)
+        ttk.Button(btn_frame, text="Làm mới", command=self.load_users).pack(side="left", padx=5)
+
+        self.load_users()
+
+    def add_user_window(self):
+        def save_user():
+            username = entry_username.get()
+            password = entry_password.get()
+            role = combo_role.get()
+            if username and password and role:
+                try:
+                    database.add_user(username, password, role)
+                    self.load_users()
+                    add_window.destroy()
+                except ValueError as e:
+                    messagebox.showerror("Lỗi", str(e))
+            else:
+                messagebox.showwarning("Cảnh báo", "Vui lòng nhập đầy đủ thông tin!")
+
+        add_window = tk.Toplevel(self.root)
+        add_window.title("Thêm tài khoản")
+
+        ttk.Label(add_window, text="Tên đăng nhập").grid(row=0, column=0, padx=10, pady=5)
+        entry_username = ttk.Entry(add_window)
+        entry_username.grid(row=0, column=1, padx=10, pady=5)
+
+        ttk.Label(add_window, text="Mật khẩu").grid(row=1, column=0, padx=10, pady=5)
+        entry_password = ttk.Entry(add_window, show="*")
+        entry_password.grid(row=1, column=1, padx=10, pady=5)
+
+        ttk.Label(add_window, text="Quyền").grid(row=2, column=0, padx=10, pady=5)
+        combo_role = ttk.Combobox(add_window, values=["admin", "user"], state="readonly")
+        combo_role.grid(row=2, column=1, padx=10, pady=5)
+
+        ttk.Button(add_window, text="Lưu", command=save_user).grid(row=3, column=0, columnspan=2, pady=10)
+
+    def load_users(self):
+        self.user_tree.delete(*self.user_tree.get_children())
+        for user in database.get_users():
+            self.user_tree.insert("", "end", values=(user[0], user[2]))
+
 if __name__ == "__main__":
     root = tk.Tk()
-    app = MisaApp(root)
+    app = MisaApp(root, "admin")  # Thay "admin" bằng "user" để kiểm tra quyền hạn
     root.mainloop()
