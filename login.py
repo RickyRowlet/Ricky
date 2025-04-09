@@ -1,8 +1,10 @@
 import tkinter as tk
 from tkinter import messagebox
 import openpyxl
+import database
 
 def check_credentials(username, password):
+    """Kiểm tra tài khoản và mật khẩu"""
     wb = openpyxl.load_workbook("users.xlsx")
     ws = wb.active
     for row in ws.iter_rows(min_row=2, values_only=True):
@@ -26,8 +28,9 @@ def show_login_window(on_success):
         u = username_entry.get()
         p = password_entry.get()
         if check_credentials(u, p):
+            role = database.check_user_role(u)
             login.destroy()
-            on_success()
+            on_success(role)  # Truyền quyền (role) vào hàm on_success
         else:
             messagebox.showerror("Lỗi", "Sai tài khoản hoặc mật khẩu")
 
